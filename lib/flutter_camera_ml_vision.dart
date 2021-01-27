@@ -279,41 +279,44 @@ class CameraMlVisionState<T> extends State<CameraMlVision<T>>
           ? Center(child: Text('$_cameraMlVisionState $_cameraError'))
           : widget.errorBuilder(context, _cameraError);
     }
-    final screenSize = MediaQuery.of(context).size;
-    var cameraAspectRatio = cameraController.value.isInitialized
-        ? _cameraController.value.aspectRatio
-        : 1;
-    var scale = screenSize.aspectRatio * cameraAspectRatio;
-    Widget cameraPreview = Transform.scale(
-      scale: scale,
-      child: Center(
-        child: _isStreaming
-            ? CameraPreview(
-                _cameraController,
-              )
-            : _getPicture(),
-      ),
+
+    Widget cameraPreview = AspectRatio(
+      aspectRatio: _cameraController.value.isInitialized ? _cameraController.value.aspectRatio : 1,
+      child: _isStreaming
+          ? CameraPreview(
+        _cameraController,
+      )
+          : _getPicture(),
     );
-    // Widget cameraPreview = AspectRatio(
-    //   aspectRatio: _cameraController.value.isInitialized ? _cameraController.value.aspectRatio : 1,
-    //   child: _isStreaming
-    //       ? CameraPreview(
-    //     _cameraController,
-    //   )
-    //       : _getPicture(),
-    // );
 
     if (widget.overlayBuilder != null) {
       cameraPreview = Stack(
-        // fit: StackFit.passthrough,
+        fit: StackFit.passthrough,
         children: [
           cameraPreview,
           widget.overlayBuilder(context),
         ],
       );
     }
+    var boxWidth = _cameraController.value.previewSize.width;
+    var boxHeight = _cameraController.value.previewSize.width *
+        _cameraController.value.aspectRatio;
+    var isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+    if (isLandscape) {
+      boxHeight = _cameraController.value.previewSize.height;
+      boxWidth = _cameraController.value.previewSize.width;
+    }
+
     return VisibilityDetector(
-      child: cameraPreview,
+      child: FittedBox(
+        alignment: Alignment.center,
+        fit: BoxFit.cover,
+        child: SizedBox(
+          width: boxWidth,
+          height: boxHeight,
+          child: cameraPreview,
+        ),
+      ),
       onVisibilityChanged: (VisibilityInfo info) {
         if (info.visibleFraction == 0) {
           //invisible stop the streaming
