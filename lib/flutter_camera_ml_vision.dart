@@ -71,6 +71,7 @@ class CameraMlVisionState<T> extends State<CameraMlVision<T>>
   bool _alreadyCheckingImage = false;
   bool _isStreaming = false;
   bool _isDeactivate = false;
+  String _currentVideoRecordingPath;
 
   @override
   void initState() {
@@ -110,7 +111,8 @@ class CameraMlVisionState<T> extends State<CameraMlVision<T>>
       _lastImage = '${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}';
       try {
         await _cameraController.initialize();
-        await _cameraController.takePicture(_lastImage);
+        var file = await _cameraController.takePicture();
+        file.saveTo(_lastImage);
       } on PlatformException catch (e) {
         debugPrint('$e');
       }
@@ -159,11 +161,15 @@ class CameraMlVisionState<T> extends State<CameraMlVision<T>>
 
   Future<void> startVideoRecording(String path) async {
     await _cameraController.stopImageStream();
-    return _cameraController.startVideoRecording(path);
+    _currentVideoRecordingPath = path;
+    return _cameraController.startVideoRecording();
   }
 
   Future<void> stopVideoRecording() async {
-    await _cameraController.stopVideoRecording();
+    var file = await _cameraController.stopVideoRecording();
+    if (_currentVideoRecordingPath != null) {
+      file.saveTo(_currentVideoRecordingPath);
+    }
     await _cameraController.startImageStream(_processImage);
   }
 
@@ -172,8 +178,13 @@ class CameraMlVisionState<T> extends State<CameraMlVision<T>>
   Future<void> takePicture(String path) async {
     await _stop(false);
     await _cameraController.initialize();
-    await _cameraController.takePicture(path);
+    var file = await _cameraController.takePicture();
+    file.saveTo(path);
     _start();
+  }
+
+  Future<void> setFlashMode(FlashMode mode) async {
+    return _cameraController.setFlashMode(mode);
   }
 
   Future<void> _initialize() async {
