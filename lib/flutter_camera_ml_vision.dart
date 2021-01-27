@@ -154,6 +154,7 @@ class CameraMlVisionState<T> extends State<CameraMlVision<T>>
   }
 
   CameraValue get cameraValue => _cameraController?.value;
+
   ImageRotation get imageRotation => _rotation;
 
   Future<void> Function() get prepareForVideoRecording =>
@@ -278,19 +279,33 @@ class CameraMlVisionState<T> extends State<CameraMlVision<T>>
           ? Center(child: Text('$_cameraMlVisionState $_cameraError'))
           : widget.errorBuilder(context, _cameraError);
     }
-
-    Widget cameraPreview = AspectRatio(
-      aspectRatio: _cameraController.value.isInitialized ? _cameraController.value.aspectRatio : 1,
-      child: _isStreaming
-          ? CameraPreview(
-        _cameraController,
-      )
-          : _getPicture(),
+    final screenSize = MediaQuery.of(context).size;
+    var cameraAspectRatio = cameraController.value.isInitialized
+        ? _cameraController.value.aspectRatio
+        : 1;
+    var scale = screenSize.aspectRatio * cameraAspectRatio;
+    Widget cameraPreview = Transform.scale(
+      scale: scale,
+      child: Center(
+        child: _isStreaming
+            ? CameraPreview(
+                _cameraController,
+              )
+            : _getPicture(),
+      ),
     );
+    // Widget cameraPreview = AspectRatio(
+    //   aspectRatio: _cameraController.value.isInitialized ? _cameraController.value.aspectRatio : 1,
+    //   child: _isStreaming
+    //       ? CameraPreview(
+    //     _cameraController,
+    //   )
+    //       : _getPicture(),
+    // );
 
     if (widget.overlayBuilder != null) {
       cameraPreview = Stack(
-        fit: StackFit.passthrough,
+        // fit: StackFit.passthrough,
         children: [
           cameraPreview,
           widget.overlayBuilder(context),
@@ -298,16 +313,7 @@ class CameraMlVisionState<T> extends State<CameraMlVision<T>>
       );
     }
     return VisibilityDetector(
-      child: FittedBox(
-        alignment: Alignment.center,
-        fit: BoxFit.cover,
-        child: SizedBox(
-          width: _cameraController.value.previewSize.height *
-              _cameraController.value.aspectRatio,
-          height: _cameraController.value.previewSize.height,
-          child: cameraPreview,
-        ),
-      ),
+      child: cameraPreview,
       onVisibilityChanged: (VisibilityInfo info) {
         if (info.visibleFraction == 0) {
           //invisible stop the streaming
