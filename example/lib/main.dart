@@ -119,10 +119,14 @@ class _ScanPageState extends State<ScanPage> {
                 },
               ),
             ),
-            RaisedButton(onPressed: () {
-              flashMode = flashMode == FlashMode.off ? FlashMode.torch : FlashMode.off;
-              _scanKey.currentState.setFlashMode(flashMode);
-            })
+            RaisedButton(
+                child: Text('Toggle Torch'),
+                onPressed: () {
+                  flashMode = flashMode == FlashMode.off
+                      ? FlashMode.torch
+                      : FlashMode.off;
+                  _scanKey.currentState.setFlashMode(flashMode);
+                })
           ],
         ),
       ),
