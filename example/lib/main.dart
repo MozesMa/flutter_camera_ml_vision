@@ -80,38 +80,54 @@ class _ScanPageState extends State<ScanPage> {
   bool resultSent = false;
   BarcodeDetector detector = FirebaseVision.instance.barcodeDetector();
 
+  final _scanKey = GlobalKey<CameraMlVisionState>();
+  FlashMode flashMode = FlashMode.off;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: SizedBox(
-          width: MediaQuery.of(context).size.width,
-          child: CameraMlVision<List<Barcode>>(
-            overlayBuilder: (c) {
-              return Container(
-                decoration: ShapeDecoration(
-                  shape: _ScannerOverlayShape(
-                    borderColor: Theme.of(context).primaryColor,
-                    borderWidth: 3.0,
-                  ),
-                ),
-              );
-            },
-            detector: detector.detectInImage,
-            onResult: (List<Barcode> barcodes) {
-              if (!mounted ||
-                  resultSent ||
-                  barcodes == null ||
-                  barcodes.isEmpty) {
-                return;
-              }
-              resultSent = true;
-              Navigator.of(context).pop<Barcode>(barcodes.first);
-            },
-            onDispose: () {
-              detector.close();
-            },
-          ),
+        child: Stack(
+          children: [
+            SizedBox(
+              width: MediaQuery.of(context).size.width,
+              child: CameraMlVision<List<Barcode>>(
+                key: _scanKey,
+                overlayBuilder: (c) {
+                  return Container(
+                    decoration: ShapeDecoration(
+                      shape: _ScannerOverlayShape(
+                        borderColor: Theme.of(context).primaryColor,
+                        borderWidth: 3.0,
+                      ),
+                    ),
+                  );
+                },
+                detector: detector.detectInImage,
+                onResult: (List<Barcode> barcodes) {
+                  if (!mounted ||
+                      resultSent ||
+                      barcodes == null ||
+                      barcodes.isEmpty) {
+                    return;
+                  }
+                  resultSent = true;
+                  Navigator.of(context).pop<Barcode>(barcodes.first);
+                },
+                onDispose: () {
+                  detector.close();
+                },
+              ),
+            ),
+            RaisedButton(
+                child: Text('Toggle Torch'),
+                onPressed: () {
+                  flashMode = flashMode == FlashMode.off
+                      ? FlashMode.torch
+                      : FlashMode.off;
+                  _scanKey.currentState.setFlashMode(flashMode);
+                })
+          ],
         ),
       ),
     );

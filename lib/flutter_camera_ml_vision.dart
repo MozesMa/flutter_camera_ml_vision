@@ -71,6 +71,7 @@ class CameraMlVisionState<T> extends State<CameraMlVision<T>>
   bool _alreadyCheckingImage = false;
   bool _isStreaming = false;
   bool _isDeactivate = false;
+  String _currentVideoRecordingPath;
 
   @override
   void initState() {
@@ -110,7 +111,8 @@ class CameraMlVisionState<T> extends State<CameraMlVision<T>>
       _lastImage = '${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}';
       try {
         await _cameraController.initialize();
-        await _cameraController.takePicture(_lastImage);
+        var file = await _cameraController.takePicture();
+        file.saveTo(_lastImage);
       } on PlatformException catch (e) {
         debugPrint('$e');
       }
@@ -152,6 +154,7 @@ class CameraMlVisionState<T> extends State<CameraMlVision<T>>
   }
 
   CameraValue get cameraValue => _cameraController?.value;
+
   ImageRotation get imageRotation => _rotation;
 
   Future<void> Function() get prepareForVideoRecording =>
@@ -159,11 +162,16 @@ class CameraMlVisionState<T> extends State<CameraMlVision<T>>
 
   Future<void> startVideoRecording(String path) async {
     await _cameraController.stopImageStream();
-    return _cameraController.startVideoRecording(path);
+    _currentVideoRecordingPath = path;
+    return _cameraController.startVideoRecording();
   }
 
   Future<void> stopVideoRecording() async {
-    await _cameraController.stopVideoRecording();
+    var file = await _cameraController.stopVideoRecording();
+    if (_currentVideoRecordingPath != null) {
+      file.saveTo(_currentVideoRecordingPath);
+      _currentVideoRecordingPath = null;
+    }
     await _cameraController.startImageStream(_processImage);
   }
 
@@ -172,8 +180,13 @@ class CameraMlVisionState<T> extends State<CameraMlVision<T>>
   Future<void> takePicture(String path) async {
     await _stop(false);
     await _cameraController.initialize();
-    await _cameraController.takePicture(path);
+    var file = await _cameraController.takePicture();
+    file.saveTo(path);
     _start();
+  }
+
+  Future<void> setFlashMode(FlashMode mode) async {
+    return _cameraController.setFlashMode(mode);
   }
 
   Future<void> _initialize() async {
@@ -286,14 +299,22 @@ class CameraMlVisionState<T> extends State<CameraMlVision<T>>
         ],
       );
     }
+    var boxWidth = _cameraController.value.previewSize.width;
+    var boxHeight = _cameraController.value.previewSize.width *
+        _cameraController.value.aspectRatio;
+    var isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+    if (isLandscape) {
+      boxHeight = _cameraController.value.previewSize.height;
+      boxWidth = _cameraController.value.previewSize.width;
+    }
+
     return VisibilityDetector(
       child: FittedBox(
         alignment: Alignment.center,
         fit: BoxFit.cover,
         child: SizedBox(
-          width: _cameraController.value.previewSize.height *
-              _cameraController.value.aspectRatio,
-          height: _cameraController.value.previewSize.height,
+          width: boxWidth,
+          height: boxHeight,
           child: cameraPreview,
         ),
       ),
