@@ -170,6 +170,7 @@ class CameraMlVisionState<T> extends State<CameraMlVision<T>>
     var file = await _cameraController.stopVideoRecording();
     if (_currentVideoRecordingPath != null) {
       file.saveTo(_currentVideoRecordingPath);
+      _currentVideoRecordingPath = null;
     }
     await _cameraController.startImageStream(_processImage);
   }
